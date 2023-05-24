@@ -65,7 +65,7 @@ def register():
         smtp_port = 587  # Puerto SMTP de Gmail
 
         smtp_username = 'jore24@autonoma.edu.pe'  # Tu dirección de correo electrónico
-        smtp_password = '987612538'  # Tu contraseña de correo electrónico
+        smtp_password = 'xd'  # Tu contraseña de correo electrónico
         try:
             with smtplib.SMTP(smtp_server, smtp_port) as server:
                 server.starttls()
