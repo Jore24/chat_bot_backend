@@ -1,7 +1,6 @@
 from flask import Flask, request, jsonify, session
 from flask_socketio import SocketIO, emit
 from flask_sqlalchemy import SQLAlchemy
-from chatbot import get_response
 from user import User
 from user import DiscountCode
 from db import db
@@ -11,6 +10,9 @@ from email.mime.text import MIMEText
 import secrets
 from itsdangerous import URLSafeTimedSerializer
 from flask_cors import CORS
+import openai
+openai.api_key = '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'
+
 
 
 
@@ -23,6 +25,7 @@ socket_io = SocketIO(app, cors_allowed_origins="*")
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:root@localhost:3306/bot'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
+
 
 
 
@@ -165,6 +168,19 @@ def login():
     return jsonify(response)
 
 
+def get_response(user_input):
+    print(user_input)
+    with open('context.txt', 'r') as file:
+        context = file.read()
+    prompt = context + '\n' + user_input
+    response = openai.Completion.create(
+        engine='text-davinci-003',
+        prompt=prompt,
+        max_tokens=50,
+        temperature=0.7
+    )
+    return response.choices[0].text.strip()
+
 
 
 @app.route('/chat', methods=['POST'])
@@ -191,6 +207,15 @@ def handle_http_message():
 def handle_connect():
     print('Client connected')
     socket_id = request.sid
+    initial_message = '¡Hola! Soy un vendedor virtual. ¿En qué puedo ayudarte hoy?'
+    initial_bot_message = {
+        'socket_id': 'bot',
+        'message': initial_message
+    }
+    
+    # Enviar el mensaje de saludo al cliente
+    emit('message', initial_bot_message, room=socket_id)
+
 
 
 @socket_io.on('disconnect')
