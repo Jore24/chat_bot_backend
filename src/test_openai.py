@@ -1,6 +1,6 @@
 import openai
 
-openai.api_key = "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"
+openai.api_key = "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"
 
 response = openai.Completion.create(
     model="text-davinci-003",
