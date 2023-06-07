@@ -11,7 +11,7 @@ import secrets
 from itsdangerous import URLSafeTimedSerializer
 from flask_cors import CORS
 import openai
-openai.api_key = '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'
+openai.api_key = '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'
 
 
 
@@ -169,7 +169,9 @@ def login():
 
 
 def get_response(user_input):
-    print(user_input)
+    if (user_input == 'Soporte'):
+        print('Soporte ps')
+        return
     with open('context.txt', 'r') as file:
         context = file.read()
     prompt = context + '\n' + user_input
@@ -180,7 +182,6 @@ def get_response(user_input):
         temperature=0.7
     )
     return response.choices[0].text.strip()
-
 
 
 @app.route('/chat', methods=['POST'])
@@ -208,9 +209,11 @@ def handle_connect():
     print('Client connected')
     socket_id = request.sid
     initial_message = '¡Hola! Soy un vendedor virtual. ¿En qué puedo ayudarte hoy?'
+    options = ['Soporte', 'Sucursal', 'Desconocido']
     initial_bot_message = {
         'socket_id': 'bot',
-        'message': initial_message
+        'message': initial_message,
+        'options': options
     }
     
     # Enviar el mensaje de saludo al cliente
