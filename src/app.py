@@ -22,7 +22,8 @@ app.debug = True
 app.config['SECRET_KEY'] = 'secret!'
 socket_io = SocketIO(app, cors_allowed_origins="*")
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:root@localhost:3306/bot'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:kenneth@localhost:3306/bot' #Cambiar contraseña de bd
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
@@ -39,12 +40,20 @@ def register():
         username = data.get('username')
         password = data.get('password')
         email = data.get('email')
+        dni = data.get('dni')
+        direccion = data.get('direccion')
+
+        print(username)
+        print(password)
+        print(email)
+        print(dni)
+        print(direccion)
 
         # Generar el hash de la contraseña
         hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
 
         # Crear una instancia del modelo de usuario con la contraseña encriptada
-        new_user = User(username=username, password=hashed_password, email=email)
+        new_user = User(username=username, password=hashed_password, email=email, dni=dni, direccion=direccion)
 
         # Guardar el nuevo usuario en la base de datos
         db.session.add(new_user)
@@ -135,39 +144,49 @@ def login():
     elif request.method == 'POST':
         print('POST request received')
 
-    # Obtener los datos del JSON enviado en la solicitud
-    data = request.get_json()
+    try:
+        # Obtener los datos del JSON enviado en la solicitud
+        data = request.get_json()
 
-    # Extraer los datos necesarios del JSON
-    username = data.get('username')
-    password = data.get('password')
+        # Extraer los datos necesarios del JSON
+        username = data.get('username')
+        password = data.get('password')
 
-    # Lógica de inicio de sesión aquí
-    # ...
-    user = User.query.filter_by(username=username).first()
+        # Lógica de inicio de sesión aquí
+        # ...
+        user = User.query.filter_by(username=username).first()
 
-    if user:
-        # Verificar si la contraseña es correcta
-        if bcrypt.checkpw(password.encode('utf-8'), user.password.encode('utf-8')):
-            session['user_id'] = user.id
+        if user:
+            # Verificar si la contraseña es correcta
+            if bcrypt.checkpw(password.encode('utf-8'), user.password.encode('utf-8')):
+                session['user_id'] = user.id
 
-            response = {
-                'message': 'Inicio de sesión exitoso',
-                'username': username
-            }
+                response = {
+                    'success': True,
+                    'message': 'Inicio de sesión exitoso',
+                    'username': username
+                }
+            else:
+                response = {
+                    'success': False,
+                    'message': 'Contraseña incorrecta'
+                }
         else:
             response = {
-                'message': 'Contraseña incorrecta'
+                'success': False,
+                'message': 'Usuario no encontrado'
             }
-    else:
+
+        # Devolver la respuesta en formato JSON
+        return jsonify(response)
+    except Exception as e:
+        error_message = str(e)
         response = {
-            'message': 'Usuario no encontrado'
+            'success': False,
+            'message': 'Error en el registro',
+            'error': error_message
         }
-
-    # Devolver la respuesta en formato JSON
-    return jsonify(response)
-
-
+        return jsonify(response), 500
 def get_response(user_input):
     if (user_input == 'Soporte'):
         print('Soporte ps')
