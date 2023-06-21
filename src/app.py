@@ -7,77 +7,75 @@ from db import db
 import bcrypt
 import smtplib
 from email.mime.text import MIMEText
-import secrets
-from itsdangerous import URLSafeTimedSerializer
 from flask_cors import CORS
 import openai
-openai.api_key = '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'
-
-
-
+openai.api_key = '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'
+from flask_pymongo import PyMongo
+from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app)
+
 app.debug = True
 app.config['SECRET_KEY'] = 'secret!'
 socket_io = SocketIO(app, cors_allowed_origins="*")
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:kenneth@localhost:3306/bot' #Cambiar contraseña de bd
-
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
+# MongoDb Prueba de Login
+app.config['MONGO_URI'] = 'mongodb+srv://jore24:jore24@olva1.3g92oyt.mongodb.net/olva1?retryWrites=true&w=majority'
+mongo = PyMongo(app)
 
+CORS(app)
 
+dbcolec = mongo.db.usuario
+dbcolec = mongo.db.messages
 
-# Definición del modelo de usuario
+for document in dbcolec.find():
+    print(document)
+
 
 # Ruta para el registro de usuarios
 @app.route('/register', methods=['POST'])
 def register():
+    dbcolec = mongo.db.usuario
     try:
         data = request.get_json()
-        username = data.get('username')
-        password = data.get('password')
-        email = data.get('email')
-        dni = data.get('dni')
-        direccion = data.get('direccion')
+        username = data['username']
+        password = data['password']
+        email = data['email']
 
-        print(username)
-        print(password)
-        print(email)
-        print(dni)
-        print(direccion)
+        # Verificar si el usuario ya existe en la base de datos
+        existing_user = dbcolec.find_one({'username': username})
+        if existing_user:
+            return jsonify({'message': 'El usuario ya está registrado'})
 
         # Generar el hash de la contraseña
         hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
 
-        # Crear una instancia del modelo de usuario con la contraseña encriptada
-        new_user = User(username=username, password=hashed_password, email=email, dni=dni, direccion=direccion)
+        # Insertar el nuevo usuario en la base de datos
+        dbcolec.insert_one({
+            'username': username, 
+            'password': hashed_password,
+            'email': email
+        })
 
-        # Guardar el nuevo usuario en la base de datos
-        db.session.add(new_user)
-        db.session.commit()
-        discount_code = secrets.token_hex(4)
-        new_discount_code = DiscountCode(code=discount_code, user_id=new_user.id)
-        db.session.add(new_discount_code)
-        db.session.commit()
-
+        # Enviar correo electrónico de bienvenida
         sender_email = 'jore24@autonoma.edu.pe'  # Reemplaza con tu dirección de correo electrónico
         receiver_email = email  # Usar la dirección de correo electrónico proporcionada por el usuario
         subject = 'Bienvenido a nuestra aplicación'  # Asunto del correo electrónico
-        message = 'Hola {},\n\nGracias por registrarte en nuestra aplicación. Tu código de descuento es: {}'.format(username, discount_code)  # Cuerpo del correo electrónico
+        message = 'Hola {},\n\nGracias por registrarte en nuestra aplicación.'.format(username)  # Cuerpo del correo electrónico
         
         msg = MIMEText(message)
         msg['Subject'] = subject
         msg['From'] = sender_email
         msg['To'] = receiver_email
-       
+
         smtp_server = 'smtp.gmail.com'  # Servidor SMTP de Gmail (puedes usar otro si prefieres)
         smtp_port = 587  # Puerto SMTP de Gmail
 
         smtp_username = 'jore24@autonoma.edu.pe'  # Tu dirección de correo electrónico
-        smtp_password = 'xd'  # Tu contraseña de correo electrónico
+        smtp_password = 'x'  # Tu contraseña de correo electrónico
+        
         try:
             with smtplib.SMTP(smtp_server, smtp_port) as server:
                 server.starttls()
@@ -90,6 +88,7 @@ def register():
                 'error': error_message
             }
             return jsonify(response), 500
+
         response = {
             'message': 'Registro exitoso',
             'username': username,
@@ -104,6 +103,8 @@ def register():
             'error': error_message
         }
         return jsonify(response), 500
+
+
 
 @app.route('/apply_discount_code', methods=['POST'])
 def apply_discount_code():
@@ -136,81 +137,73 @@ def apply_discount_code():
 
     return jsonify(response)
 
-
 @app.route('/login', methods=['POST', 'GET'])
 def login():
-    if request.method == 'GET':
-        print('GET request received XD')
-    elif request.method == 'POST':
-        print('POST request received')
+    dbcolec = mongo.db.usuario
+    # Obtener los datos del JSON enviado en la solicitud
+    data = request.get_json()
 
-    try:
-        # Obtener los datos del JSON enviado en la solicitud
-        data = request.get_json()
+    # Extraer los datos necesarios del JSON
+    username = data.get('username')
+    password = data.get('password')
 
-        # Extraer los datos necesarios del JSON
-        username = data.get('username')
-        password = data.get('password')
+    # Buscar el usuario en la base de datos
+    user = dbcolec.find_one({'username': username})
 
-        # Lógica de inicio de sesión aquí
-        # ...
-        user = User.query.filter_by(username=username).first()
+    if user:
+        hashed_password = user.get('password')
+        # Verificar si la contraseña es correcta
+        if bcrypt.checkpw(password.encode('utf-8'), hashed_password):
+            session['user_id'] = str(user.get('_id'))
 
-        if user:
-            # Verificar si la contraseña es correcta
-            if bcrypt.checkpw(password.encode('utf-8'), user.password.encode('utf-8')):
-                session['user_id'] = user.id
-
-                response = {
-                    'success': True,
-                    'message': 'Inicio de sesión exitoso',
-                    'username': username
-                }
-            else:
-                response = {
-                    'success': False,
-                    'message': 'Contraseña incorrecta'
-                }
+            response = {
+                'message': 'Inicio de sesión exitoso',
+                'username': username
+            }
         else:
             response = {
-                'success': False,
-                'message': 'Usuario no encontrado'
+                'message': 'Contraseña incorrecta'
             }
-
-        # Devolver la respuesta en formato JSON
-        return jsonify(response)
-    except Exception as e:
-        error_message = str(e)
+    else:
         response = {
-            'success': False,
-            'message': 'Error en el registro',
-            'error': error_message
+            'message': 'Usuario no encontrado'
         }
-        return jsonify(response), 500
+
+    # Devolver la respuesta en formato JSON
+    return jsonify(response)
+
+
+
+
 def get_response(user_input):
-    if (user_input == 'Soporte'):
-        print('Soporte ps')
-        return
+    dbcolec = mongo.db.messages
+    message = user_input.get('message')
+    user = user_input.get('user')
     with open('context.txt', 'r') as file:
         context = file.read()
-    prompt = context + '\n' + user_input
+    prompt = context + '\n' + message
     response = openai.Completion.create(
         engine='text-davinci-003',
         prompt=prompt,
-        max_tokens=50,
+        max_tokens=15,
         temperature=0.7
     )
+    #guardar el socket
+    dbcolec.insert_one({'message': message, 'user' : user, 'bot_response': response.choices[0].text.strip()})
+
     return response.choices[0].text.strip()
+
 
 
 @app.route('/chat', methods=['POST'])
 def handle_http_message():
     data = request.json
+    print(data, )
     message = {
-        'socket_id': 'user',
+        'socket_id': 'socket_id',
         'message': data['message']
     }
-    print('Received message:', message)
+    
     
     # Enviar el mensaje al chatbot y obtener la respuesta
     response = get_response(data['message'])
@@ -225,17 +218,13 @@ def handle_http_message():
 
 @socket_io.on('connect')
 def handle_connect():
-    print('Client connected')
     socket_id = request.sid
-    initial_message = '¡Hola! Soy un vendedor virtual. ¿En qué puedo ayudarte hoy?'
-    options = ['Soporte', 'Sucursal', 'Desconocido']
+    initial_message = '¡Hola! Soy un asistente virtual. ¿En qué puedo ayudarte hoy?'
     initial_bot_message = {
         'socket_id': 'bot',
-        'message': initial_message,
-        'options': options
+        'message': initial_message
     }
     
-    # Enviar el mensaje de saludo al cliente
     emit('message', initial_bot_message, room=socket_id)
 
 
@@ -247,11 +236,14 @@ def handle_disconnect():
 
 @socket_io.on('message')
 def handle_socket_message(data):
+    user = data['user']
     message = {
         'socket_id': request.sid,
-        'message': data
+        'message': data,
+        'user': user
+       
+        
     }
-    print('Received message:', message)
     
     # Enviar el mensaje al chatbot y obtener la respuesta
     response = get_response(data)
@@ -259,7 +251,7 @@ def handle_socket_message(data):
     # Crear un mensaje con la respuesta del chatbot
     bot_message = {
         'socket_id': 'bot',
-        'message': response
+        'message': response,
     }
     
     # Emitir el mensaje del bot a todos los clientes conectados
