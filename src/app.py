@@ -28,7 +28,7 @@ mongo = PyMongo(app)
 CORS(app)
 
 dbcolec = mongo.db.usuario
-dbcolec = mongo.db.messages
+# dbcolec = mongo.db.messages
 
 for document in dbcolec.find():
     print(document)
@@ -179,6 +179,9 @@ def get_response(user_input):
     dbcolec = mongo.db.messages
     message = user_input.get('message')
     user = user_input.get('user')
+    if (user_input == 'Soporte'):
+        print('Soporte ps')
+        return
     with open('context.txt', 'r') as file:
         context = file.read()
     prompt = context + '\n' + message
@@ -220,13 +223,13 @@ def handle_http_message():
 def handle_connect():
     socket_id = request.sid
     initial_message = '¡Hola! Soy un asistente virtual. ¿En qué puedo ayudarte hoy?'
+    options = ['Soporte', 'Sucursal', 'Desconocido', 'asdsasd', 'awqeqwd']
     initial_bot_message = {
         'socket_id': 'bot',
-        'message': initial_message
+        'message': initial_message,
+        'options': options
     }
-    
     emit('message', initial_bot_message, room=socket_id)
-
 
 
 @socket_io.on('disconnect')
