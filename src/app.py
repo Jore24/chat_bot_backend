@@ -9,17 +9,18 @@ import smtplib
 from email.mime.text import MIMEText
 from flask_cors import CORS
 import openai
-openai.api_key = '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'
+openai.api_key = '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'
 from flask_pymongo import PyMongo
 from flask_cors import CORS
-
+import random
+import string
 app = Flask(__name__)
 
 app.debug = True
 app.config['SECRET_KEY'] = 'secret!'
 socket_io = SocketIO(app, cors_allowed_origins="*")
 
-db.init_app(app)
+
 
 # MongoDb Prueba de Login
 app.config['MONGO_URI'] = 'mongodb+srv://jore24:jore24@olva1.3g92oyt.mongodb.net/olva1?retryWrites=true&w=majority'
@@ -33,68 +34,92 @@ dbcolec = mongo.db.usuario
 for document in dbcolec.find():
     print(document)
 
+def generate_discount_code(length=8):
+    characters = string.ascii_letters + string.digits
+    code = ''.join(random.choices(characters, k=length))
+    return code
 
-# Ruta para el registro de usuarios
+
+
+def send_email(sender_email, receiver_email, subject, message, smtp_username, smtp_password):
+    msg = MIMEText(message)
+    msg['Subject'] = subject
+    msg['From'] = sender_email
+    msg['To'] = receiver_email
+
+    smtp_server = 'smtp.gmail.com'
+    smtp_port = 587
+
+    try:
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.starttls()
+            server.login(smtp_username, smtp_password)
+            server.sendmail(sender_email, receiver_email, msg.as_string())
+    except smtplib.SMTPException as e:
+        error_message = str(e)
+        response = {
+            'message': 'Error en el registro',
+            'error': error_message
+        }
+        return jsonify(response), 500
+
 @app.route('/register', methods=['POST'])
 def register():
     dbcolec = mongo.db.usuario
     try:
         data = request.get_json()
         username = data['username']
-        password = data['password']
+        dni = data['dni']
+        address = data['address']
         email = data['email']
-
-        # Verificar si el usuario ya existe en la base de datos
+        password = data['password']
+    
+        
+        if 'role' in data:
+            role = data['role']
+        else:
+            role = 'client'
+        
         existing_user = dbcolec.find_one({'username': username})
         if existing_user:
             return jsonify({'message': 'El usuario ya está registrado'})
 
-        # Generar el hash de la contraseña
         hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+        discount_code = generate_discount_code()
 
-        # Insertar el nuevo usuario en la base de datos
-        dbcolec.insert_one({
+        result = dbcolec.insert_one({
             'username': username, 
             'password': hashed_password,
-            'email': email
+            'email': email,
+            'dni': dni,
+            'address': address,
+            'role': role,
+            'discount_code' : discount_code,
+            'is_used': False
+
         })
 
-        # Enviar correo electrónico de bienvenida
-        sender_email = 'jore24@autonoma.edu.pe'  # Reemplaza con tu dirección de correo electrónico
-        receiver_email = email  # Usar la dirección de correo electrónico proporcionada por el usuario
-        subject = 'Bienvenido a nuestra aplicación'  # Asunto del correo electrónico
-        message = 'Hola {},\n\nGracias por registrarte en nuestra aplicación.'.format(username)  # Cuerpo del correo electrónico
+        sender_email = 'jore24@autonoma.edu.pe'
+        receiver_email = email
+        subject = 'Bienvenido a nuestra aplicación'
+        message = 'Hola {},\n\nGracias por registrarte en nuestra aplicación. Tu código de descuento es: {}'.format(username, discount_code)
         
-        msg = MIMEText(message)
-        msg['Subject'] = subject
-        msg['From'] = sender_email
-        msg['To'] = receiver_email
-
-        smtp_server = 'smtp.gmail.com'  # Servidor SMTP de Gmail (puedes usar otro si prefieres)
-        smtp_port = 587  # Puerto SMTP de Gmail
-
-        smtp_username = 'jore24@autonoma.edu.pe'  # Tu dirección de correo electrónico
-        smtp_password = 'x'  # Tu contraseña de correo electrónico
+       
         
-        try:
-            with smtplib.SMTP(smtp_server, smtp_port) as server:
-                server.starttls()
-                server.login(smtp_username, smtp_password)
-                server.sendmail(sender_email, receiver_email, msg.as_string())
-        except smtplib.SMTPException as e:
-            error_message = str(e)
-            response = {
-                'message': 'Error en el registro',
-                'error': error_message
-            }
-            return jsonify(response), 500
+        smtp_username = 'jore24@autonoma.edu.pe'
+        smtp_password = '987612538'
+        
+        send_email(sender_email, receiver_email, subject, message, smtp_username, smtp_password)
 
+        user_id = str(result.inserted_id)  
+        
         response = {
             'message': 'Registro exitoso',
             'username': username,
-            'email': email
+            'email': email,
+            'user_id': user_id
         }
-
+        
         return jsonify(response)
     except Exception as e:
         error_message = str(e)
@@ -103,8 +128,6 @@ def register():
             'error': error_message
         }
         return jsonify(response), 500
-
-
 
 @app.route('/apply_discount_code', methods=['POST'])
 def apply_discount_code():
@@ -155,11 +178,18 @@ def login():
         # Verificar si la contraseña es correcta
         if bcrypt.checkpw(password.encode('utf-8'), hashed_password):
             session['user_id'] = str(user.get('_id'))
+            print('ID del usuario logueado:', session['user_id'])
+            print(user)
 
             response = {
                 'message': 'Inicio de sesión exitoso',
-                'username': username
+                'username': username,
+                'user_id': str(user.get('_id')),
+                'role': user.get('role')
+                
             }
+            
+
         else:
             response = {
                 'message': 'Contraseña incorrecta'
@@ -172,30 +202,88 @@ def login():
     # Devolver la respuesta en formato JSON
     return jsonify(response)
 
+#@app.route('/chat', methods=['POST'])
+def get_response_validate_apply_discount_code(user_input):
+    dbcolec = mongo.db.usuario  # Nombre de la colección de usuarios en tu base de datos
+    code = user_input.get('message')
+
+    # Realizar la consulta en la base de datos para encontrar un usuario con el código de descuento ingresado
+    user_with_code = dbcolec.find_one({'discount_code': code})
+
+    if user_with_code:
+        
+        return "¡Excelente! El código de descuento que ingresaste es válido. Ahora puedes disfrutar de los beneficios especiales que ofrecemos. Recuerda que puedes acercarte a nuestras tiendas Olva más cercanas para aprovechar tu descuento. Si tienes alguna pregunta adicional, no dudes en consultarnos. ¿En qué más puedo asistirte?"
+        
+    else:
+ 
+        return "Lo siento, el código de descuento que ingresaste no es válido o ya está usado. Por favor, asegúrate de haber ingresado el código correcto. Si tienes alguna pregunta, no dudes en contactarnos. ¿Hay algo más en lo que pueda ayudarte?"
+ 
+
+    
 
 
+
+
+context = ""  # Variable para almacenar el contexto globalmente
+context_initialized = False  # Bandera para indicar si el contexto se ha inicializado
 
 def get_response(user_input):
+    global context, context_initialized
+
     dbcolec = mongo.db.messages
     message = user_input.get('message')
     user = user_input.get('user')
-    if (user_input == 'Soporte'):
-        print('Soporte ps')
-        return
-    with open('context.txt', 'r') as file:
-        context = file.read()
+    reasons_for_contact = ['Soporte', 'Sucursales y servicios', 'Reclamos', 'Envíos', 'Cupones y descuentos', 'Agente en línea']
+    if message == 'Agente en línea':
+
+        return "Pronto estaremos habilitando este canal en línea, por favor puedes contactarnos por llamada al número 917251229 o nuestra página de facebook www.facebook.com/Olva"
+    
+    if message == 'salir' and context_initialized is False:
+        context = ""
+        context_initialized = False
+        form_link = "https://docs.google.com/forms/d/e/1FAIpQLSejir0c7S-vRyzc1SNu4Ko_138IzC740sE7JuYXe-KH2ufkVw/viewform"
+        response = "Gracias por usar nuestro chatbot. Para finalizar, necesitamos tu opinión sobre mi funcionamiento. Por favor, completa este [cuestionario]( " + form_link + " ) para proporcionarnos tus comentarios."
+        return response
+
+    
+    elif message == 'salir' and context_initialized is True:
+        context = ""
+        context_initialized = False
+        return "", get_response(user_input)
+    elif message == 'Cupones y descuentos' and context_initialized is False:
+        print('Entra?')
+        context_initialized = False  # Reiniciar la bandera de contexto
+        context = "ValidarCupon"  # Establecer el contexto para validar el cupón
+        return "Estaré encantado de ayudarte, por favor. Ingresa el código de descuento"
+    
+    elif context == "ValidarCupon":
+        context = ""  # Reiniciar el contexto
+        return get_response_validate_apply_discount_code(user_input)
+
+
+    if not context_initialized:
+        for reason in reasons_for_contact:
+            if reason in message:
+                filename = reason.lower().replace(" ", "_") + '.txt'
+                with open(filename, 'r') as file:
+                    print('Se abrió el archivo', filename)
+                    context = file.read()
+                    context_initialized = True
+                    break
+
     prompt = context + '\n' + message
     response = openai.Completion.create(
         engine='text-davinci-003',
         prompt=prompt,
-        max_tokens=15,
+        max_tokens=100,
         temperature=0.7
     )
-    #guardar el socket
-    dbcolec.insert_one({'message': message, 'user' : user, 'bot_response': response.choices[0].text.strip()})
+
+    # Guardar el mensaje en la base de datos
+    result= dbcolec.insert_one({'messageUser': message, 'user': user, 'reasons_for_contact' : reasons_for_contact, 'bot_response': response.choices[0].text.strip()})
+    print('Se guardó el mensaje en la base de datos',result)
 
     return response.choices[0].text.strip()
-
 
 
 @app.route('/chat', methods=['POST'])
@@ -216,25 +304,35 @@ def handle_http_message():
         'socket_id': 'bot',
         'message': response
     }
-    
+    print('que acá?')
     return jsonify(bot_message)
 
 @socket_io.on('connect')
 def handle_connect():
-    socket_id = request.sid
-    initial_message = '¡Hola! Soy un asistente virtual. ¿En qué puedo ayudarte hoy?'
-    options = ['Soporte', 'Sucursal', 'Desconocido', 'asdsasd', 'awqeqwd']
-    initial_bot_message = {
-        'socket_id': 'bot',
-        'message': initial_message,
-        'options': options
-    }
-    emit('message', initial_bot_message, room=socket_id)
+    print('conectado')
+# def handle_connect():
+#     socket_id = request.sid
+#     initial_message = '¡Hola! Soy un asistente virtual. ¿En qué puedo ayudarte hoy?'
+#     options = ['Soporte', 'Sucursal', 'Reclamos', 'Envíos', 'Sucursales y servicios', 'Cotizaciones']
+#     print('entras aca?')
+#     initial_bot_message = {
+#         'message': initial_message,
+#         'options': options,
+#         'socket_id': 'bot'
+#     }
+#     emit('message', initial_bot_message, room=socket_id)
 
 
 @socket_io.on('disconnect')
 def handle_disconnect():
     print('Client disconnected')
+
+@socket_io.on('connection')
+def handle_connection():
+    print('Client connected')
+
+
+
 
 
 @socket_io.on('message')

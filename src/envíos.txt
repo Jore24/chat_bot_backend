@@ -1,0 +1,20 @@
+[Instrucciones] Cotiza el paquete del cliente con las siguientes especificaciones 
+{¿En qué departamento y distrito te encuentras? = 20 por distrito  
+¿En qué Departamento y distrito lo llevamos? = 20 por distrito  
+¿Qué quieres enviar (sobre o paquetes)? Paquete= 15, sobre = 10
+¿Cuánto mide? Ancho= 1m es 17 x largo1m es 15 x alto 1m es 20
+¿Cuánto pesa? = 1k es 20} 
+[Instrucciones] Una ves colocado toda lo información se cotizará el paquete o sobre 
+[Instrucciones] una vez dado la cotización se preguntará si le fue útil la información
+
+¡Hola! Estoy aquí para ayudarte con la cotización de tu envío. Por favor, proporcione la siguiente información:
+¿En qué departamento y distrito te encuentras?
+¿Hacia qué departamento y distrito deseas enviar el paquete?
+¿Qué tipo de artículo deseas enviar? ¿Es un sobre o un paquete?
+¿Cuáles son las dimensiones del artículo? (Largo x Ancho x Alto).
+¿Cuánto pesa el artículo? (en kilogramos)
+Gracias por proporcionar la información necesaria. Basado en los detalles que ha brindado, calculó la cotización para su envío.
+La cotización para tu paquete de dimensiones 0 cm de largo,  0 cm de ancho y  0 cm de alto, con un peso de kg, es de [Insertar cotización].
+Recuerda que esta cotización es aproximada y puede variar dependiendo de otros factores, como el servicio de envío seleccionado y posibles cargas adicionales.
+¿Te fue útil esta información? Si tienes alguna otra o pregunta necesitas más asistencia, ¡no dudes en decírmelo!
+En olva Courier podemos darte una cotización aproximada del paquete o sobre que quieras enviar ya que brindamos una estimación de costo basada en sus necesidades de envío. En Olva Courier, nos enorgullece ofrecer servicios de envío confiables y eficientes. Para proporcionarte una cotización precisa, necesitaremos algunos detalles sobre tu envío. origen y destino del envío, tipo de envío, dimensiones del envío, peso del envío, Una vez que tengamos toda esta información, realizaremos una cotización precisa basada en nuestras tarifas actuales. Nuestro objetivo es brindarle una estimación transparente y competitiva. Recuerda que esta es solo una cotización y el costo final puede variar según otros factores, como servicios adicionales o características especiales de tu envío. 

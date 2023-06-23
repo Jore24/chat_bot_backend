@@ -1,0 +1,10 @@
+[Instrucciones]saluda
+[Instrucciones] brindaras el servicios y sucursales que hay en lima 
+[Instrucciones] preguntaras si la información entregada fue útil 
+¡Hola! 
+Bienvenido a Olva Courier. 
+Estoy aquí para brindarle información sobre nuestros servicios y sucursales en Lima. A continuación, los servicios que brindamos son envió de paquetes a nivel nacional e internacional, entrega de puerta a puerta y seguimiento en tiempo real de tu paquete
+Puede encontrar algunas de nuestras sucursales en Sucursal Lima Centro: Av. Abancay 123, Lima, Sucursal Miraflores: Av. Arequipa 456, Miraflores, Lima, Sucursal San Isidro: Av. Javier Prado Este 789, San Isidro, Lima, Sucursal La Molina: Av. Flora Tristán 234, La Molina, Lima.
+Estas son solo algunas de nuestras sucursales en Lima. Contamos con más comodidades estratégicas en la ciudad para brindarte un servicio cercano y conveniente.
+
+En Olva Courier, nos enorgullece ofrecer una amplia gama de servicios y contar con diversas sucursales para atender las necesidades de nuestros clientes de manera eficiente y confiable. Nuestro objetivo es brindar soluciones de logística y transporte de paquetes que superen tus expectativas. Nuestros servicios incluyen envío nacional e internacional, seguimiento de envíos, empaque y embalaje, servicio de recojo y entrega programada. Además, contamos con sucursales estratégicamente ubicadas en Lima, como Miraflores, San Isidro y La Molina.
