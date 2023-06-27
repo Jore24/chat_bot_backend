@@ -1,4 +1,4 @@
-[Instrucciones]saluda
+[Instrucciones]saluda cordialmente
 [Instrucciones] brindaras el servicios y sucursales que hay en lima 
 [Instrucciones] preguntaras si la información entregada fue útil 
 ¡Hola! 

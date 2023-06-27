@@ -1,4 +1,4 @@
-[Instrucciones]saluda
+[Instrucciones]saluda cordialmente
 [Instrucciones] pide el número de tracking del cliente
 [Instrucciones] una vez dado el numero de tracking de dará el mensaje que fue registrado y lo rediccionaras a un link de Facebook = https://web.facebook.com/olvaperu/?_rdc=1&_rdr
 

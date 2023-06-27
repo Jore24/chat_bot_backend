@@ -4,16 +4,18 @@ from flask_sqlalchemy import SQLAlchemy
 from user import User
 from user import DiscountCode
 from db import db
+from email.mime.multipart import MIMEMultipart
 import bcrypt
 import smtplib
 from email.mime.text import MIMEText
 from flask_cors import CORS
 import openai
-openai.api_key = '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'
+openai.api_key = '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'
 from flask_pymongo import PyMongo
 from flask_cors import CORS
 import random
 import string
+from email.mime.image import MIMEImage
 app = Flask(__name__)
 
 app.debug = True
@@ -41,11 +43,33 @@ def generate_discount_code(length=8):
 
 
 
-def send_email(sender_email, receiver_email, subject, message, smtp_username, smtp_password):
-    msg = MIMEText(message)
+def send_email(sender_email, receiver_email, subject, message, image_path, smtp_username, smtp_password):
+    msg = MIMEMultipart()
     msg['Subject'] = subject
     msg['From'] = sender_email
     msg['To'] = receiver_email
+
+    # Agregar el mensaje de texto
+    text = MIMEText(message)
+    msg.attach(text)
+
+    # Adjuntar la imagen
+    with open(image_path, 'rb') as image_file:
+        image = MIMEImage(image_file.read())
+        image.add_header('Content-ID', '<image>')
+        msg.attach(image)
+
+    # Crear el contenido del mensaje en HTML con la imagen incrustada
+    html_content = f'''
+        <html>
+            <body>
+                <p>{message}</p>
+                <img src="cid:image" alt="Image">
+            </body>
+        </html>
+    '''
+    html = MIMEText(html_content, 'html')
+    msg.attach(html)
 
     smtp_server = 'smtp.gmail.com'
     smtp_port = 587
@@ -65,6 +89,8 @@ def send_email(sender_email, receiver_email, subject, message, smtp_username, sm
 
 @app.route('/register', methods=['POST'])
 def register():
+    image_path = 'img.jpg'
+    
     dbcolec = mongo.db.usuario
     try:
         data = request.get_json()
@@ -109,7 +135,7 @@ def register():
         smtp_username = 'jore24@autonoma.edu.pe'
         smtp_password = '987612538'
         
-        send_email(sender_email, receiver_email, subject, message, smtp_username, smtp_password)
+        send_email(sender_email, receiver_email, subject, message, image_path, smtp_username, smtp_password)
 
         user_id = str(result.inserted_id)  
         
@@ -227,6 +253,8 @@ def get_response_validate_apply_discount_code(user_input):
 context = ""  # Variable para almacenar el contexto globalmente
 context_initialized = False  # Bandera para indicar si el contexto se ha inicializado
 
+
+    
 def get_response(user_input):
     global context, context_initialized
 
@@ -244,12 +272,27 @@ def get_response(user_input):
         form_link = "https://docs.google.com/forms/d/e/1FAIpQLSejir0c7S-vRyzc1SNu4Ko_138IzC740sE7JuYXe-KH2ufkVw/viewform"
         response = "Gracias por usar nuestro chatbot. Para finalizar, necesitamos tu opinión sobre mi funcionamiento. Por favor, completa este [cuestionario]( " + form_link + " ) para proporcionarnos tus comentarios."
         return response
+    if message == 'opciones' and context_initialized is False:
+        context = ""
+        context_initialized = False
+        
+        response = "Selecciona nuevamente el motivo de tu contacto por favor 😀"
+        return response
 
-    
     elif message == 'salir' and context_initialized is True:
         context = ""
         context_initialized = False
         return "", get_response(user_input)
+    
+    if message == 'borrar' and context_initialized is False:
+        context = ""
+        context_initialized = False
+        print("borrado")
+
+        return "???"
+    
+    
+    
     elif message == 'Cupones y descuentos' and context_initialized is False:
         print('Entra?')
         context_initialized = False  # Reiniciar la bandera de contexto
@@ -275,7 +318,7 @@ def get_response(user_input):
     response = openai.Completion.create(
         engine='text-davinci-003',
         prompt=prompt,
-        max_tokens=100,
+        max_tokens=150,
         temperature=0.7
     )
 
@@ -285,6 +328,9 @@ def get_response(user_input):
 
     return response.choices[0].text.strip()
 
+
+
+    # Realiza la acción correspondiente con el mensaje recibido
 
 @app.route('/chat', methods=['POST'])
 def handle_http_message():
@@ -306,6 +352,8 @@ def handle_http_message():
     }
     print('que acá?')
     return jsonify(bot_message)
+
+
 
 @socket_io.on('connect')
 def handle_connect():
