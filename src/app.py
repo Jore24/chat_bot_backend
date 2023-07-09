@@ -10,7 +10,7 @@ import smtplib
 from email.mime.text import MIMEText
 from flask_cors import CORS
 import openai
-openai.api_key = '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'
+openai.api_key = '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'
 from flask_pymongo import PyMongo
 from flask_cors import CORS
 import random
