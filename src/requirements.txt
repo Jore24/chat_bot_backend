@@ -7,5 +7,5 @@ Flask-PyMongo==2.3.0
 Flask-SocketIO==5.3.4
 Flask-SQLAlchemy==3.0.3
 openai==0.27.7
-python-dotenv==1.0.0
+python-dotenv==0.21.1
 PyMongo==4.3.3
