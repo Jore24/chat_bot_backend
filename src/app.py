@@ -10,22 +10,29 @@ import smtplib
 from email.mime.text import MIMEText
 from flask_cors import CORS
 import openai
-openai.api_key = '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'
 from flask_pymongo import PyMongo
 from flask_cors import CORS
 import random
 import string
 from email.mime.image import MIMEImage
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+openai.api_key = os.getenv('OPENAI_API_KEY')
+
+
 app = Flask(__name__)
 
 app.debug = True
-app.config['SECRET_KEY'] = 'secret!'
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 socket_io = SocketIO(app, cors_allowed_origins="*")
 
 
 
 # MongoDb Prueba de Login
-app.config['MONGO_URI'] = 'mongodb+srv://jore24:jore24@olva1.3g92oyt.mongodb.net/olva1?retryWrites=true&w=majority'
+app.config['MONGO_URI'] = os.getenv('MONGO_URI')
 mongo = PyMongo(app)
 
 CORS(app)
@@ -125,15 +132,15 @@ def register():
 
         })
 
-        sender_email = 'jore24@autonoma.edu.pe'
+        sender_email = os.getenv('SMTP_USERNAME')
         receiver_email = email
         subject = 'Bienvenido a nuestra aplicación'
         message = 'Hola {},\n\nGracias por registrarte en nuestra aplicación. Tu código de descuento es: {}'.format(username, discount_code)
         
        
         
-        smtp_username = 'jore24@autonoma.edu.pe'
-        smtp_password = '987612538'
+        smtp_username = os.getenv('SMTP_USERNAME')
+        smtp_password = os.getenv('SMTP_PASSWORD')
         
         send_email(sender_email, receiver_email, subject, message, image_path, smtp_username, smtp_password)
 
@@ -411,4 +418,6 @@ def handle_socket_message(data):
 
 
 if __name__ == "__main__":
-    socket_io.run(app, host="0.0.0.0", port=5000)
+    # Obtener el puerto desde las variables de entorno
+   port = int(os.getenv("PORT", 5000))
+socket_io.run(app, host="0.0.0.0", port=port)
